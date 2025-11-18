@@ -19,11 +19,12 @@ def fetch_data_expo():
         arribos_expo_carga['Fecha'] = pd.to_datetime(arribos_expo_carga['Fecha'], format='%d/%m')
         arribos_expo_carga = arribos_expo_carga.sort_values(by="Fecha")
         arribos_expo_carga['Fecha'] = arribos_expo_carga['Fecha'].dt.strftime('%d/%m')
-        arribos_expo_ctns['Fecha'] = pd.to_datetime(arribos_expo_ctns['Fecha'], format='%d/%m')
-        arribos_expo_ctns = arribos_expo_ctns.sort_values(by="Fecha")
-        arribos_expo_ctns['Fecha'] = arribos_expo_ctns['Fecha'].dt.strftime('%d/%m')
-        arribos_expo_ctns['Chofer'] = arribos_expo_ctns['Chofer'].fillna('-')
-        arribos_expo_ctns['Chofer'] = arribos_expo_ctns['Chofer'].str.title()
+        if not arribos_expo_ctns.empty:
+            arribos_expo_ctns['Fecha'] = pd.to_datetime(arribos_expo_ctns['Fecha'], format='%d/%m')
+            arribos_expo_ctns = arribos_expo_ctns.sort_values(by="Fecha")
+            arribos_expo_ctns['Fecha'] = arribos_expo_ctns['Fecha'].dt.strftime('%d/%m')
+            arribos_expo_ctns['Chofer'] = arribos_expo_ctns['Chofer'].fillna('-')
+            arribos_expo_ctns['Chofer'] = arribos_expo_ctns['Chofer'].str.title()
         verificaciones_expo = verificaciones_expo[verificaciones_expo['Dia'] != '-']
         otros_expo = otros_expo[otros_expo['Dia'] != '-']
         remisiones = remisiones[remisiones['Dia'] != '-']
@@ -45,6 +46,7 @@ def fetch_data_expo():
             cols = remisiones.columns.tolist()
             cols.insert(1, cols.pop(cols.index('Hora')))
             remisiones = remisiones[cols]
+            remisiones.drop(columns=['Chofer', 'Fecha y Hora Fin'], inplace=True, errors='ignore')
         a_consolidar.sort_values(by="Dias", ascending=False, inplace=True)
     except Exception:
         pass
@@ -127,10 +129,16 @@ def show_page_expo(allowed_clients=None, apply_mudanceras_filter=False):
         with co2_sub:
             st.subheader("Arribos de Contenedores")
         with col2_metric1:
-            st.metric(label="Pendientes hoy", value=arribos_expo_ctns[(arribos_expo_ctns['Estado'] == 'Pendiente') & 
-                                                 (arribos_expo_ctns['Fecha'] == today)]['Cantidad'].sum())
+            if not arribos_expo_ctns.empty:
+                st.metric(label="Pendientes hoy", value=arribos_expo_ctns[(arribos_expo_ctns['Estado'] == 'Pendiente') & 
+                                                    (arribos_expo_ctns['Fecha'] == today)]['Cantidad'].sum())
+            else:
+                st.metric(label="Pendientes hoy", value=0)
         with col2_metric2:
-            st.metric(label="Arribados", value=arribos_expo_ctns[(arribos_expo_ctns['Estado'].str.contains('Arribado'))].shape[0])
+            if not arribos_expo_ctns.empty:
+                st.metric(label="Arribados", value=arribos_expo_ctns[(arribos_expo_ctns['Estado'].str.contains('Arribado'))]['Cantidad'].sum())
+            else:
+                st.metric(label="Arribados", value=0)
         st.dataframe(arribos_expo_ctns.style.apply(highlight, axis=1), hide_index=True, use_container_width=True)
 
 
